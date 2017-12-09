@@ -21,6 +21,8 @@
 
 #define FORMAT_PCM 1
 
+pthread_t capture_pthread;
+
 struct wav_header {
     uint32_t riff_id;
     uint32_t riff_sz;
@@ -99,9 +101,7 @@ static void *capturing_thread(void *data)
 
 static void createCapturingThread(void)
 {
-    pthread_t thread;
-
-    pthread_create(&thread, NULL, capturing_thread,
+    pthread_create(&capture_pthread, NULL, capturing_thread,
             NULL);
 }
 
@@ -153,7 +153,7 @@ static int begin_capture(char *fileName) {
         //fseek(file, sizeof(struct wav_header), SEEK_SET);
 
         //TODO: push/pop mechanism to get recording thread's data.
-        while(pipe_pop(c_len, &len, 1)) {
+        while(pipe_pop(c_len, &len, 1) && (capturing == 1)) {
             //printf("len = %d\n", len);
             if(len == 0)
                 break;
@@ -195,6 +195,8 @@ static int begin_capture(char *fileName) {
     } else {
         printf("open fileName: %s failed\n", fileName);
     }
+
+    fclose(file);
 
     return 0;
 }
