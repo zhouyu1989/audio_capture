@@ -21,7 +21,6 @@
 
 #define FORMAT_PCM 1
 
-pthread_t capture_pthread;
 
 struct wav_header {
     uint32_t riff_id;
@@ -57,6 +56,7 @@ pthread_mutex_t g_mutex;
 
 //need mutex lock mechanism to protect.
 int capturing = 0;
+int local_capturing = 0;
 int capFinish = 1;
 int error = 0;
 
@@ -101,6 +101,8 @@ static void *capturing_thread(void *data)
 
 static void createCapturingThread(void)
 {
+    pthread_t capture_pthread;
+
     pthread_create(&capture_pthread, NULL, capturing_thread,
             NULL);
 }
@@ -153,7 +155,7 @@ static int begin_capture(char *fileName) {
         //fseek(file, sizeof(struct wav_header), SEEK_SET);
 
         //TODO: push/pop mechanism to get recording thread's data.
-        while(pipe_pop(c_len, &len, 1) && (capturing == 1)) {
+        while(pipe_pop(c_len, &len, 1) && (local_capturing == 1)) {
             //printf("len = %d\n", len);
             if(len == 0)
                 break;
@@ -209,7 +211,6 @@ static unsigned int capture_sample(unsigned int card, unsigned int device,
     char *buffer;
     struct pcm *pcm;
     int size;
-    int local_capturing = 0;
     struct pcm_config config;
     unsigned int bytes_read = 0;
 
